@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <a href="dashboard.php" class="btn btn-primary">Go to Dashboard</a>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Entry Form</title>
+    <style>
+        .product-entry {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .cancel-button {
+            position: absolute;
+            right: 0;
+            top: 0;
+            background-color: red;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+   
+
+    <form action="insproduct.php" method="post" enctype="multipart/form-data">
+
+        <label for="company">Select Company:</label><br>
+        <select name="company" id="company" required>
+         <option value="ITEC">ITEC</option>
+         <option value="ITTCO">ITTCO</option>
+         <option value="G.E.P.S">G.E.P.S</option>
+         </select><br><br>
+         
+        <label for="projectname">Project Name:</label><br>
+        <input type="text" id="projectname" name="projectname" required><br><br>
+
+        <label for="rqst_title">Requisition Title:</label><br>
+        <input type="text" id="rqst_title" name="rqst_title" required><br><br>
+
+        <div id="productContainer">
+            <div class="product-entry">
+                <label for="product">Select Product:</label><br>
+                <select name="product[]" onchange="handleProductChange(this)">
+                    <option value="FUEL">FUEL</option>
+                    <option value="STATIONARY">STATIONARY</option>
+                    <option value="MISSION_ALLOWANCE">MISSION_ALLOWANCE</option>
+                    <option value="TRANSPORT">TRANSPORT</option>
+                    <option value="other">Other</option>
+                </select><br>
+
+                <div class="otherProductInput" style="display:none;">
+                    <label for="otherProduct">Please specify:</label><br>
+                    <input type="text" name="otherProduct[]" placeholder="Enter product name"><br>
+                </div>
+
+                <label for="quantity">Quantity:</label><br>
+                <input type="number" name="quantity[]" required><br>
+
+                <label for="price">Price per unit:</label><br>
+                <input type="number" step="0.01" name="price[]" required><br>
+
+                <label for="description">Product Description:</label><br>
+                <textarea name="description[]" rows="4" cols="50"></textarea><br>
+            </div>
+        </div>
+        
+        <button type="button" onclick="addProduct()">Add Another Product</button><br><br>
+        
+        <label for="file">Supporting File (PDF or Image, Optional):</label><br>
+        <input type="file" name="file" accept=".pdf, image/*"><br><br>
+
+        <label>RETURN Document Type:</label><br>
+        <input type="radio" id="ebm" name="return_document" value="EBM" required>
+        <label for="ebm">EBM</label><br>
+        <input type="radio" id="dmc" name="return_document" value="DMC" required>
+        <label for="dmc">DMC</label><br>
+        <input type="radio" id="wht" name="return_document" value="WHT" required>
+        <label for="wht">WHT</label><br>
+        <input type="radio" id="other" name="return_document" value="Other" required>
+        <label for="other">Other</label>
+        <input type="text" id="other_document" name="other_document" placeholder="Specify if Other"><br><br>
+
+        <input type="submit" value="Submit">
+    </form>
+
+    <script>
+        function handleProductChange(selectElement) {
+            var otherProductInput = selectElement.closest('.product-entry').querySelector('.otherProductInput');
+            if (selectElement.value === 'other') {
+                otherProductInput.style.display = 'block';
+            } else {
+                otherProductInput.style.display = 'none';
+            }
+        }
+
+        function addProduct() {
+            var productContainer = document.getElementById('productContainer');
+            var productEntry = document.querySelector('.product-entry').cloneNode(true);
+            productEntry.querySelector('.otherProductInput').style.display = 'none';
+            productEntry.querySelectorAll('input').forEach(input => input.value = '');
+            productEntry.querySelector('textarea').value = '';
+            
+            var cancelButton = document.createElement('button');
+            cancelButton.type = 'button';
+            cancelButton.classList.add('cancel-button');
+            cancelButton.textContent = 'Cancel';
+            cancelButton.onclick = function() {
+                removeProduct(cancelButton);
+            };
+            productEntry.appendChild(cancelButton);
+            cancelButton.style.display = 'block';  // Ensure the cancel button is shown for new products
+
+            productContainer.appendChild(productEntry);
+        }
+
+        function removeProduct(button) {
+            var productEntry = button.closest('.product-entry');
+            productEntry.remove();
+        }
+    </script>
+</body>
+</html>
