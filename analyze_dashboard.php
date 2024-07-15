@@ -1,5 +1,4 @@
 
-
 <?php
 session_start();
 include('config.php');
@@ -99,7 +98,7 @@ while ($row = $chartResult->fetch_assoc()) {
 <body>
     <button onclick="location.href='dashboard.php'">Return to Dashboard</button>
     <div class="container">
-        <h1>Welcome to Admin analysis Dashboard, <?php echo htmlspecialchars($user_name); ?></h1>
+        <h1>Welcome to Admin Analysis Dashboard, <?php echo htmlspecialchars($user_name); ?></h1>
         <h2>Analyze Requests</h2>
 
         <!-- Chart container -->
@@ -188,17 +187,7 @@ while ($row = $chartResult->fetch_assoc()) {
                                 i : 0;
                     };
                     
-                    // Total over all pages
-                    var totalColumn = function(colIdx) {
-                        return api
-                            .column(colIdx)
-                            .data()
-                            .reduce( function (a, b) {
-                                return intVal(a) + intVal(b);
-                            }, 0 );
-                    };
-
-                    // Total over this page
+                    // Total over current page
                     var pageTotalColumn = function(colIdx) {
                         return api
                             .column(colIdx, { page: 'current'} )
@@ -211,10 +200,10 @@ while ($row = $chartResult->fetch_assoc()) {
                     // Count occurrences of credited companies
                     var countCompanies = function(company) {
                         return api
-                            .column(1)
+                            .column(1, { page: 'current' })
                             .data()
                             .filter(function(value) {
-                                return value === company ? true : false;
+                                return value === company;
                             }).length;
                     };
 
@@ -255,16 +244,16 @@ while ($row = $chartResult->fetch_assoc()) {
                     // Count occurrences for status
                     var countStatus = function(status) {
                         return api
-                            .column(7)
+                            .column(7, { page: 'current' })
                             .data()
                             .filter(function(value) {
-                                return value === status ? true : false;
+                                return value === status;
                             }).length;
                     };
 
                     // Update footer
                     $( api.column(0).footer() ).html(
-                        'Total: ' + api.column(0).data().length
+                        'Total: ' + api.column(0, { page: 'current' }).data().length
                     );
                     $('#itec-count').html(countCompanies('ITEC'));
                     $('#ittco-count').html(countCompanies('ITTCO'));
@@ -274,22 +263,22 @@ while ($row = $chartResult->fetch_assoc()) {
                     var requestorCountsHtml = Object.keys(requestorCounts).map(function(requestor) {
                         return requestor + ': ' + requestorCounts[requestor];
                     }).join(', ');
-                    $( api.column(4).footer() ).html(requestorCountsHtml);
+                    $('#requester-count').html(requestorCountsHtml);
 
                     var productCounts = productCount();
                     var productCountsHtml = Object.keys(productCounts).map(function(product) {
                         return product + ': ' + productCounts[product];
                     }).join(', ');
-                    $( api.column(3).footer() ).html(productCountsHtml);
+                    $('#total-products').html(productCountsHtml);
 
                     var approvedCount = countStatus('APPROVED');
                     var deniedCount = countStatus('DENIED');
-                    $( api.column(7).footer() ).html(
+                    $('#status-count').html(
                         'Approved: ' + approvedCount + ', Denied: ' + deniedCount
                     );
                      
                     var totalMoney = pageTotalColumn(6);
-                    $( api.column(6).footer() ).html(
+                    $('#total-money').html(
                         'Total Money: ' + totalMoney.toFixed(2) + ' RWF'
                     );
                 }
@@ -307,7 +296,7 @@ while ($row = $chartResult->fetch_assoc()) {
             });
         });
 
-           // Prepare data for the chart
+        // Prepare data for the chart
         var chartData = <?php echo json_encode($chartData); ?>;
         var months = [];
         var companies = ['ITTCO', 'G.E.P.S', 'ITEC'];

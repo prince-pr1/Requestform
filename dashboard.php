@@ -80,7 +80,8 @@ $conn->close();
                 <button onclick="location.href='<?php echo ($position === 'ACCOUNTANT') ? 'accountant_dashboard.php' : 'admins_dashboard.php'; ?>'">Check New Requests</button>
             </div>
         <?php endif; ?>
-        
+
+        <button onclick="location.href='profile_view.php'">Profile view</button>
         <button onclick="location.href='chatreq.html'">ADD New Requests</button>
         <button onclick="location.href='update_password.php'">change current password</button>
         
