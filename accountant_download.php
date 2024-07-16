@@ -105,8 +105,8 @@ $conn->close();
         <h2>Download Requests</h2>
 
         <!-- Chart container -->
-        <canvas id="requestChart" width="400" height="200"></canvas>
-
+     <!-- <canvas id="requestChart" width="400" height="200"></canvas> -->
+  
         <table id="requestsTable">
             <thead>
                 <tr>

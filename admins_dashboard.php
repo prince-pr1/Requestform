@@ -16,7 +16,7 @@ $user_id = $_SESSION['user_id'];
 $username = $_SESSION['username'];
 $user_name = $_SESSION['user_name'];
 
-// Fetch pending requests with total price of associated products, excluding already approved/rejected requests by the user
+// Fetch requests approved by the accountant
 $query = "SELECT r.rqst_id, r.rqst_time, r.rqst_title, r.projectname, r.rqst_by, 
                  COALESCE(SUM(p.total_price), 0) AS total_price,
                  u.name AS requestor_name,
@@ -28,29 +28,15 @@ $query = "SELECT r.rqst_id, r.rqst_time, r.rqst_title, r.projectname, r.rqst_by,
           LEFT JOIN product p ON rp.product_id = p.product_number
           LEFT JOIN request_approvals ra_accountant 
                 ON r.rqst_id = ra_accountant.reqst_id 
-                AND ra_accountant.approver_id = (SELECT user_id FROM users WHERE position = 'ACCOUNTANT') 
+                AND ra_accountant.approver_id IN (SELECT user_id FROM users WHERE position = 'ACCOUNTANT')
                 AND ra_accountant.approval_status = 'APPROVED'
-          LEFT JOIN request_approvals ra_admin 
-                ON r.rqst_id = ra_admin.reqst_id 
-                AND ra_admin.approver_id = ?
           WHERE r.status = 'PENDING' 
                 AND ra_accountant.approval_id IS NOT NULL
-                AND ra_admin.approval_id IS NULL
           GROUP BY r.rqst_id, r.rqst_time, r.rqst_title, r.projectname, r.rqst_by, u.name";
 
-$stmt = $conn->prepare($query);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
+$result = $conn->query($query);
 
-$requests = [];
-while ($row = $result->fetch_assoc()) {
-    $requests[] = $row;
-}
-
-$stmt->close();
-
-// SQL query to fetch the latest 20 requests with their approval statuses and requester info
+// Fetch the latest 20 requests with their approval statuses
 $sql = "
     SELECT 
         r.rqst_id,
@@ -76,7 +62,11 @@ $sql = "
     LIMIT 20;
 ";
 
-$result = $conn->query($sql);
+$requests = $conn->query($sql);
+
+if (!$result || !$requests) {
+    trigger_error('Invalid query: ' . $conn->error);
+}
 
 $conn->close();
 ?>
@@ -136,7 +126,7 @@ $conn->close();
     <button onclick="location.href='analyze_dashboard.php'">ENTER ANALYSIS Dashboard</button>
     <div class="container">
         <h1>Welcome to Admin Dashboard, <?php echo htmlspecialchars($user_name); ?></h1>
-        
+
         <h2>Request Approval Tracking</h2>
         <table>
             <thead>
@@ -150,18 +140,25 @@ $conn->close();
                     <th>Accountant</th>
                 </tr>
             </thead>
-            
             <tbody>
-                <?php if ($result->num_rows > 0): ?>
-                    <?php while($row = $result->fetch_assoc()): ?>
+                <?php if ($requests->num_rows > 0): ?>
+                    <?php while($row = $requests->fetch_assoc()): ?>
                         <tr>
                             <td><?php echo htmlspecialchars($row['rqst_time']); ?></td>
                             <td><?php echo htmlspecialchars($row['rqst_title']); ?></td>
                             <td><?php echo htmlspecialchars($row['requestor_name']); ?></td>
-                            <td class="<?php echo htmlspecialchars($row['Managing Director']); ?>"><?php echo htmlspecialchars($row['Managing Director']); ?></td>
-                            <td class="<?php echo htmlspecialchars($row['Project Manager']); ?>"><?php echo htmlspecialchars($row['Project Manager']); ?></td>
-                            <td class="<?php echo htmlspecialchars($row['Office Manager']); ?>"><?php echo htmlspecialchars($row['Office Manager']); ?></td>
-                            <td class="<?php echo htmlspecialchars($row['Accountant']); ?>"><?php echo htmlspecialchars($row['Accountant']); ?></td>
+                            <td class="<?php echo htmlspecialchars($row['Managing Director']); ?>">
+                                <?php echo htmlspecialchars($row['Managing Director']); ?>
+                            </td>
+                            <td class="<?php echo htmlspecialchars($row['Project Manager']); ?>">
+                                <?php echo htmlspecialchars($row['Project Manager']); ?>
+                            </td>
+                            <td class="<?php echo htmlspecialchars($row['Office Manager']); ?>">
+                                <?php echo htmlspecialchars($row['Office Manager']); ?>
+                            </td>
+                            <td class="<?php echo htmlspecialchars($row['Accountant']); ?>">
+                                <?php echo htmlspecialchars($row['Accountant']); ?>
+                            </td>
                         </tr>
                     <?php endwhile; ?>
                 <?php else: ?>
@@ -171,6 +168,7 @@ $conn->close();
                 <?php endif; ?>
             </tbody>
         </table>
+
         <h2>Requests for Approval</h2>
         <table>
             <thead>
@@ -185,38 +183,42 @@ $conn->close();
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($requests as $request): ?>
+                <?php if ($result && $result->num_rows > 0): ?>
+                    <?php while ($row = $result->fetch_assoc()): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($row['rqst_time']); ?></td>
+                            <td><?php echo htmlspecialchars($row['rqst_title']); ?></td>
+                            <td><?php echo isset($row['requestor_name']) ? htmlspecialchars($row['requestor_name']) : 'N/A'; ?></td>
+                            <td>
+                                <?php if (!empty($row['pdf_view'])): ?>
+                                    <a href="pdf_view.php?rqst_id=<?php echo $row['rqst_id']; ?>" target="_blank">View PDF</a>
+                                <?php else: ?>
+                                    No PDF available
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($row['has_supporting_doc'] === 'yes'): ?>
+                                    <a href="view_supporting_document.php?rqst_id=<?php echo $row['rqst_id']; ?>" target="_blank">
+                                        <span class="eye-icon">&#128065;</span>
+                                    </a>
+                                <?php else: ?>
+                                    N/A
+                                <?php endif; ?>
+                            </td>
+                            <td><?php echo htmlspecialchars($row['total_price']); ?></td>
+                            <td>
+                                <a href="action_approve_request.php?rqst_id=<?php echo $row['rqst_id']; ?>&action=approve" class="approve-btn">Approve</a>
+                                <a href="action_approve_request.php?rqst_id=<?php echo $row['rqst_id']; ?>&action=reject" class="reject-btn">Reject</a>
+                            </td>
+                        </tr>
+                    <?php endwhile; ?>
+                <?php else: ?>
                     <tr>
-                        <td><?php echo htmlspecialchars($request['rqst_time']); ?></td>
-                        <td><?php echo htmlspecialchars($request['rqst_title']); ?></td>
-                        <td><?php echo isset($request['requestor_name']) ? htmlspecialchars($request['requestor_name']) : 'N/A'; ?></td>
-                        <td>
-                            <?php if (!empty($request['pdf_view'])): ?>
-                                <a href="pdf_view.php?rqst_id=<?php echo $request['rqst_id']; ?>" target="_blank">View PDF</a>
-                            <?php else: ?>
-                                No PDF available
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <?php if ($request['has_supporting_doc'] === 'yes'): ?>
-                                <a href="view_supporting_document.php?rqst_id=<?php echo $request['rqst_id']; ?>" target="_blank">
-                                    <span class="eye-icon">&#128065;</span>
-                                </a>
-                            <?php else: ?>
-                                N/A
-                            <?php endif; ?>
-                        </td>
-                        <td><?php echo htmlspecialchars($request['total_price']); ?></td>
-                        <td>
-                            <a href="action_approve_request.php?rqst_id=<?php echo $request['rqst_id']; ?>&action=approve" class="approve-btn">Approve</a>
-                            <a href="action_approve_request.php?rqst_id=<?php echo $request['rqst_id']; ?>&action=reject" class="reject-btn">Reject</a>
-                        </td>
+                        <td colspan="7">No requests found</td>
                     </tr>
-                <?php endforeach; ?>
+                <?php endif; ?>
             </tbody>
         </table>
-
-       
     </div>
 </body>
 </html>

@@ -173,212 +173,220 @@ while ($row = $chartResult->fetch_assoc()) {
         </table>
     </div>
     <script>
-        $(document).ready(function() {
-            var table = $('#requestsTable').DataTable({
-                "order": [[ 0, "desc" ]],
-                footerCallback: function ( row, data, start, end, display ) {
-                    var api = this.api(), data;
-                    
-                    // Function to format numbers
-                    var intVal = function ( i ) {
-                        return typeof i === 'string' ?
-                            i.replace(/[\$,]/g, '')*1 :
-                            typeof i === 'number' ?
-                                i : 0;
-                    };
-                    
-                    // Total over current page
-                    var pageTotalColumn = function(colIdx) {
-                        return api
-                            .column(colIdx, { page: 'current'} )
-                            .data()
-                            .reduce( function (a, b) {
-                                return intVal(a) + intVal(b);
-                            }, 0 );
-                    };
+    $(document).ready(function() {
+        var table = $('#requestsTable').DataTable({
+            "order": [[ 0, "desc" ]],
+            footerCallback: function ( row, data, start, end, display ) {
+                var api = this.api(), data;
+                
+                // Function to format numbers
+                var intVal = function ( i ) {
+                    return typeof i === 'string' ?
+                        i.replace(/[\$,]/g, '')*1 :
+                        typeof i === 'number' ?
+                            i : 0;
+                };
+                
+                // Total over current page
+                var pageTotalColumn = function(colIdx) {
+                    return api
+                        .column(colIdx, { page: 'current'} )
+                        .data()
+                        .reduce( function (a, b) {
+                            return intVal(a) + intVal(b);
+                        }, 0 );
+                };
 
-                    // Count occurrences of credited companies
-                    var countCompanies = function(company) {
-                        return api
-                            .column(1, { page: 'current' })
-                            .data()
-                            .filter(function(value) {
-                                return value === company;
-                            }).length;
-                    };
+                // Count occurrences of credited companies
+                var countCompanies = function(company) {
+                    return api
+                        .column(1, { page: 'current' })
+                        .data()
+                        .filter(function(value) {
+                            return value === company;
+                        }).length;
+                };
 
-                    // Count occurrences of requestors
-                    var countRequestors = function() {
-                        var requestorCounts = {};
-                        api
-                            .column(4, { page: 'current' })
-                            .data()
-                            .each(function(value) {
-                                if (value in requestorCounts) {
-                                    requestorCounts[value]++;
+                // Count occurrences of requestors
+                var countRequestors = function() {
+                    var requestorCounts = {};
+                    api
+                        .column(4, { page: 'current' })
+                        .data()
+                        .each(function(value) {
+                            if (value in requestorCounts) {
+                                requestorCounts[value]++;
+                            } else {
+                                requestorCounts[value] = 1;
+                            }
+                        });
+                    return requestorCounts;
+                };
+
+                // Get counts for product names
+                var productCount = function() {
+                    var productCounts = {};
+                    api
+                        .column(3, { page: 'current' })
+                        .data()
+                        .each(function(value) {
+                            value.split(', ').forEach(function(product) {
+                                if (product in productCounts) {
+                                    productCounts[product]++;
                                 } else {
-                                    requestorCounts[value] = 1;
+                                    productCounts[product] = 1;
                                 }
                             });
-                        return requestorCounts;
-                    };
+                        });
+                    return productCounts;
+                };
 
-                    // Get counts for product names
-                    var productCount = function() {
-                        var productCounts = {};
-                        api
-                            .column(3, { page: 'current' })
-                            .data()
-                            .each(function(value) {
-                                value.split(', ').forEach(function(product) {
-                                    if (product in productCounts) {
-                                        productCounts[product]++;
-                                    } else {
-                                        productCounts[product] = 1;
-                                    }
-                                });
-                            });
-                        return productCounts;
-                    };
+                // Count occurrences for status
+                var countStatus = function(status) {
+                    return api
+                        .column(7, { page: 'current' })
+                        .data()
+                        .filter(function(value) {
+                            return value === status;
+                        }).length;
+                };
 
-                    // Count occurrences for status
-                    var countStatus = function(status) {
-                        return api
-                            .column(7, { page: 'current' })
-                            .data()
-                            .filter(function(value) {
-                                return value === status;
-                            }).length;
-                    };
+                // Update footer
+                $( api.column(0).footer() ).html(
+                    'Total: ' + api.column(0, { page: 'current' }).data().length
+                );
+                $('#itec-count').html(countCompanies('ITEC'));
+                $('#ittco-count').html(countCompanies('ITTCO'));
+                $('#geps-count').html(countCompanies('G.E.P.S'));
 
-                    // Update footer
-                    $( api.column(0).footer() ).html(
-                        'Total: ' + api.column(0, { page: 'current' }).data().length
-                    );
-                    $('#itec-count').html(countCompanies('ITEC'));
-                    $('#ittco-count').html(countCompanies('ITTCO'));
-                    $('#geps-count').html(countCompanies('G.E.P.S'));
+                var requestorCounts = countRequestors();
+                var requestorCountsHtml = Object.keys(requestorCounts).map(function(requestor) {
+                    return requestor + ': ' + requestorCounts[requestor];
+                }).join(', ');
+                $('#requester-count').html(requestorCountsHtml);
 
-                    var requestorCounts = countRequestors();
-                    var requestorCountsHtml = Object.keys(requestorCounts).map(function(requestor) {
-                        return requestor + ': ' + requestorCounts[requestor];
-                    }).join(', ');
-                    $('#requester-count').html(requestorCountsHtml);
+                var productCounts = productCount();
+                var productCountsHtml = Object.keys(productCounts).map(function(product) {
+                    return product + ': ' + productCounts[product];
+                }).join(', ');
+                $('#total-products').html(productCountsHtml);
 
-                    var productCounts = productCount();
-                    var productCountsHtml = Object.keys(productCounts).map(function(product) {
-                        return product + ': ' + productCounts[product];
-                    }).join(', ');
-                    $('#total-products').html(productCountsHtml);
+                var approvedCount = countStatus('APPROVED');
+                var deniedCount = countStatus('DENIED');
+                $('#status-count').html(
+                    'Approved: ' + approvedCount + ', Denied: ' + deniedCount
+                );
+                 
+                var totalMoney = pageTotalColumn(6);
+                $('#total-money').html(
+                    'Total Money: ' + totalMoney.toFixed(2) + ' RWF'
+                );
+            }
+        });
 
-                    var approvedCount = countStatus('APPROVED');
-                    var deniedCount = countStatus('DENIED');
-                    $('#status-count').html(
-                        'Approved: ' + approvedCount + ', Denied: ' + deniedCount
-                    );
-                     
-                    var totalMoney = pageTotalColumn(6);
-                    $('#total-money').html(
-                        'Total Money: ' + totalMoney.toFixed(2) + ' RWF'
-                    );
+        // Apply the search
+        table.columns().every(function() {
+            var that = this;
+
+            $('input', this.header()).on('keyup change clear', function() {
+                if (that.search() !== this.value) {
+                    that.search(this.value).draw();
                 }
             });
-
-            // Apply the search
-            table.columns().every(function() {
-                var that = this;
-
-                $('input', this.header()).on('keyup change clear', function() {
-                    if (that.search() !== this.value) {
-                        that.search(this.value).draw();
-                    }
-                });
-            });
         });
+    });
 
-        // Prepare data for the chart
-        var chartData = <?php echo json_encode($chartData); ?>;
-        var months = [];
-        var companies = ['ITTCO', 'G.E.P.S', 'ITEC'];
-        var statuses = ['APPROVED', 'DENIED'];
-        
-        var dataSets = {};
+  // Prepare data for the chart
+var chartData = <?php echo json_encode($chartData); ?>;
+var months = [];
+var companies = ['ITTCO', 'G.E.P.S', 'ITEC'];
+var statuses = ['APPROVED', 'DENIED'];
 
-        companies.forEach(function(company) {
-            statuses.forEach(function(status) {
-                var key = company + '_' + status;
-                dataSets[key] = [];
-            });
-        });
+var dataSets = {};
 
-        chartData.forEach(function(row) {
-            if (!months.includes(row.month)) {
-                months.push(row.month);
-            }
-            var key = row.credited_company + '_' + row.status;
-            dataSets[key].push(row.count);
-        });
+companies.forEach(function(company) {
+    statuses.forEach(function(status) {
+        var key = company + '_' + status;
+        dataSets[key] = [];
+    });
+});
 
-        var chartConfig = {
-            type: 'bar',
-            data: {
-                labels: months,
-                datasets: []
-            },
-            options: {
-                responsive: true,
+chartData.forEach(function(row) {
+    if (!months.includes(row.month)) {
+        months.push(row.month);
+    }
+    var key = row.credited_company + '_' + row.status;
+    dataSets[key].push(row.count);
+});
+
+// Limit months to maximum 4 if available
+if (months.length > 4) {
+    months = months.slice(months.length - 4);
+}
+
+var chartConfig = {
+    type: 'bar',
+    data: {
+        labels: months,
+        datasets: []
+    },
+    options: {
+        responsive: true,
+        title: {
+            display: true,
+            text: 'Approved and Denied Requests by Credited Company (Monthly)'
+        },
+        scales: {
+            x: {
                 title: {
                     display: true,
-                    text: 'Approved and Denied Requests by Credited Company (Monthly)'
+                    text: 'Month'
+                }
+            },
+            y: {
+                title: {
+                    display: true,
+                    text: 'Number of Requests'
                 },
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Month'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Number of Requests'
-                        },
-                        beginAtZero: true
-                    }
-                }
+                beginAtZero: true,
+                precision: 0, // Display whole numbers only
+                stepSize: 1 // Ensure the scale goes by 1
             }
-        };
+        }
+    }
+};
 
-        companies.forEach(function(company) {
-            statuses.forEach(function(status) {
-                var key = company + '_' + status;
-                var bgColor, borderColor;
-                switch (company) {
-                    case 'ITTCO':
-                        bgColor = status === 'APPROVED' ? 'rgba(0, 0, 255, 0.2)' : 'rgba(255, 165, 0, 0.2)';
-                        borderColor = status === 'APPROVED' ? 'rgba(0, 0, 255, 1)' : 'rgba(255, 165, 0, 1)';
-                        break;
-                    case 'G.E.P.S':
-                        bgColor = status === 'APPROVED' ? 'rgba(255, 255, 0, 0.2)' : 'rgba(128, 0, 128, 0.2)';
-                        borderColor = status === 'APPROVED' ? 'rgba(255, 255, 0, 1)' : 'rgba(128, 0, 128, 1)';
-                        break;
-                    case 'ITEC':
-                        bgColor = status === 'APPROVED' ? 'rgba(0, 128, 0, 0.2)' : 'rgba(255, 0, 0, 0.2)';
-                        borderColor = status === 'APPROVED' ? 'rgba(0, 128, 0, 1)' : 'rgba(255, 0, 0, 1)';
-                        break;
-                }
-                chartConfig.data.datasets.push({
-                    label: company + ' - ' + status,
-                    data: dataSets[key],
-                    backgroundColor: bgColor,
-                    borderColor: borderColor,
-                    borderWidth: 1
-                });
-            });
+companies.forEach(function(company) {
+    statuses.forEach(function(status) {
+        var key = company + '_' + status;
+        var bgColor, borderColor;
+        switch (company) {
+            case 'ITTCO':
+                bgColor = status === 'APPROVED' ? 'rgba(0, 0, 255, 0.2)' : 'rgba(255, 165, 0, 0.2)';
+                borderColor = status === 'APPROVED' ? 'rgba(0, 0, 255, 1)' : 'rgba(255, 165, 0, 1)';
+                break;
+            case 'G.E.P.S':
+                bgColor = status === 'APPROVED' ? 'rgba(255, 255, 0, 0.2)' : 'rgba(128, 0, 128, 0.2)';
+                borderColor = status === 'APPROVED' ? 'rgba(255, 255, 0, 1)' : 'rgba(128, 0, 128, 1)';
+                break;
+            case 'ITEC':
+                bgColor = status === 'APPROVED' ? 'rgba(0, 128, 0, 0.2)' : 'rgba(255, 0, 0, 0.2)';
+                borderColor = status === 'APPROVED' ? 'rgba(0, 128, 0, 1)' : 'rgba(255, 0, 0, 1)';
+                break;
+        }
+        chartConfig.data.datasets.push({
+            label: company + ' - ' + status,
+            data: dataSets[key],
+            backgroundColor: bgColor,
+            borderColor: borderColor,
+            borderWidth: 1
         });
+    });
+});
 
-        var ctx = document.getElementById('requestChart').getContext('2d');
-        new Chart(ctx, chartConfig);
-    </script>
+var ctx = document.getElementById('requestChart').getContext('2d');
+new Chart(ctx, chartConfig);
+</script>
+
 </body>
 </html>
