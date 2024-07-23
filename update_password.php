@@ -11,6 +11,23 @@ $user_id = $_SESSION['user_id'];
 $username = $_SESSION['username'];
 $user_name = $_SESSION['user_name'];
 
+// Check if recovery questions are set
+$query = "SELECT COUNT(*) FROM user_recovery WHERE user_id = ?";
+$stmt = $conn->prepare($query);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$stmt->bind_result($question_count);
+$stmt->fetch();
+$stmt->close();
+
+// Debug: Print the value of $question_count
+echo "Question Count: $question_count<br>";
+
+if ($question_count == 0) {
+    header("Location: recovery_questions.php");
+    exit();
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $current_password = $_POST['current_password'];
     $new_password = $_POST['new_password'];
@@ -88,8 +105,8 @@ $conn->close();
         }
     </script>
 </head>
-<button onclick="location.href='dashboard.php'">Return to Dashboard</button>
 <body>
+    <button onclick="location.href='dashboard.php'">Return to Dashboard</button>
     <div class="container">
         <h1>Update Password</h1>
         <?php if (isset($error)): ?>
