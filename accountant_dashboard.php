@@ -102,6 +102,7 @@ $conn->close();
     <button onclick="location.href='userAuth/signup.html'">ADD New USER</button>
     <button onclick="location.href='dashboard.php'">Return to Dashboard</button>
      <button onclick="location.href='accountant_download.php'"> Download Decided Requests</button>
+     <button onclick="location.href='analyze_dashboard.php'"> Download Decided Requests</button>
 
     <div class="container">
         <h1>Welcome to Accountant Dashboard, <?php echo htmlspecialchars($user_name); ?></h1>
