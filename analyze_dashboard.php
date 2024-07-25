@@ -38,12 +38,13 @@ while ($row = $result->fetch_assoc()) {
     $requests[] = $row;
 }
 
-$chartQuery = "SELECT DATE_FORMAT(rqst_time, '%Y-%m') AS month, credited_company, status, COUNT(*) AS count
-               FROM request
-               WHERE status IN ('APPROVED', 'DENIED')
-               GROUP BY month, credited_company, status
-               ORDER BY month DESC
-               LIMIT 4";
+ $chartQuery = "SELECT DATE_FORMAT(rqst_time, '%Y-%m') AS month, credited_company, status, COUNT(*) AS count
+FROM request
+WHERE status IN ('APPROVED', 'DENIED') 
+AND rqst_time >= DATE_SUB(CURDATE(), INTERVAL 4 MONTH)
+GROUP BY month, credited_company, status
+ORDER BY month DESC;
+";
 $chartResult = $conn->query($chartQuery);
 
 $chartData = [];
