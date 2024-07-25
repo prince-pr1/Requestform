@@ -1,25 +1,7 @@
 <?php
 session_start();
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_name']) || !isset($_SESSION['username'])) {
-    // Redirect to login page or handle the error
-    header('Location: login.php');
-    exit();
-}
-
-// Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "verite";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+include('config.php');
 
 // Debugging: Check if id is set
 if (!isset($_GET['rqst_id'])) {

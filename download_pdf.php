@@ -7,7 +7,7 @@ ini_set('display_errors', 1);
 
 // Function to fetch data from the database
 function fetchDataFromDatabase($reqst_id, $db_connection) {
-    $query = "SELECT r.projectname, r.rqst_title, r.return_document, r.credited_company,
+    $query = "SELECT r.projectname, r.rqst_title, r.return_document, r.credited_company,r.currency,
                      r.rqst_by, u.name AS requester_name,
                      p.product_name, p.description, p.quantity AS quantity, p.price_per_unit, 
                      (p.quantity * p.price_per_unit) AS total_price
@@ -196,7 +196,12 @@ class PDF extends FPDF {
     function DisplayApprovals($approvalsData) {
         foreach ($approvalsData as $approval) {
             if ($approval['approval_status'] === 'APPROVED') {
-                $this->Cell(0, 10, "Approved By: {$approval['approver_name']} ({$approval['approver_position']})", 0, 1);
+                // Check if the approver is an accountant
+                if ($approval['approver_position'] === 'ACCOUNTANT') {
+                    $this->Cell(0, 10, "Verified By: {$approval['approver_name']} ({$approval['approver_position']})", 0, 1);
+                } else {
+                    $this->Cell(0, 10, "Approved By: {$approval['approver_name']} ({$approval['approver_position']})", 0, 1);
+                }
                 $this->Cell(0, 10, "Approval Time: {$approval['approved_at']}", 0, 1);
             } elseif ($approval['approval_status'] === 'REJECTED') {
                 $this->Cell(0, 10, "Rejected By: {$approval['approver_name']} ({$approval['approver_position']})", 0, 1);
@@ -256,7 +261,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pdf->Cell(0, 10, "Project Name: " . $data[0]['projectname'], 0, 1);
     $pdf->Cell(0, 10, "Request Title: " . $data[0]['rqst_title'], 0, 1);
     $pdf->Cell(0, 10, "Return Document: " . $data[0]['return_document'], 0, 1);
-    
+    $pdf->Cell(0, 10, "Currency: " . $data[0]['currency'], 0, 1);
     $pdf->Ln(10);
 
     // Adding product details

@@ -159,6 +159,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $other_document = isset($_POST['other_document']) ? $_POST['other_document'] : ''; // Other return document
     $rqst_by = $_SESSION['user_id'];
     $company = $_POST['company'];
+    $currency = $_POST['currency'];
+}
 
     // Handle file upload for request table
     $fileContent = null;
@@ -170,8 +172,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     // Insert the request details into the request table
-    $requestSql = $conn->prepare("INSERT INTO request (rqst_time, rqst_title, projectname, rqst_by, file_column, has_supporting_doc, return_document, credited_company) VALUES (CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?)");
-    $requestSql->bind_param("ssissss", $rqst_title, $projectname, $rqst_by, $fileContent, $hasSupportingDoc, $return_document, $company);
+    $requestSql = $conn->prepare("INSERT INTO request (rqst_time, rqst_title, projectname, rqst_by, file_column, has_supporting_doc, return_document, credited_company, currency) VALUES (CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $requestSql->bind_param("ssisssss", $rqst_title, $projectname, $rqst_by, $fileContent, $hasSupportingDoc, $return_document, $company, $currency);
+
+    if ($requestSql->execute()) {
 
     if ($requestSql->execute()) {
         $rqst_id = $requestSql->insert_id; // Get the ID of the inserted request
@@ -182,7 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if ($product == 'other') {
                 $product = $otherProducts[$index];
             }
-
+           
             $quantity = $quantities[$index];
             $price = $prices[$index];
             $description = $descriptions[$index];
@@ -231,6 +235,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($return_document == 'Other') {
             $pdf->Cell(0, 10, "Other Document: $other_document", 0, 1);
         }
+        $pdf->Cell(0, 10, "Currency :  $currency", 0, 1);
         $pdf->Ln(10);
 
         // Table header
@@ -263,11 +268,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $updatePdfSql->close();
 
         // Display link to view the PDF and cancel button
-        echo '<a href="onrequest_view_pdf.php?id=' . $rqst_id . '" target="_blank">View PDF</a><br>';
+       
+      echo '<a href="onrequest_view_pdf.php?id=' . $rqst_id . '" target="_blank">View PDF</a><br>';
         echo '<form method="post" action="cancel_request.php">';
         echo '<input type="hidden" name="rqst_id" value="' . $rqst_id . '">';
         echo '<button type="submit">Cancel</button>';
-        echo '</form>';
+        echo '</form>'; 
+
+        /* echo '<script type="text/javascript">
+          function showPopup() {
+          alert("Your request has been inserted successfully!");
+           if (confirm("Do you want to view the PDF now?")) {
+        window.open("onrequest_view_pdf.php?id=' . $rqst_id . '", "_blank");
+    }
+    window.location.href = "dashboard.php";
+}
+showPopup();
+*/
 
     } else {
         echo 'Error: ' . $requestSql->error . '<br>';
@@ -277,4 +294,5 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 // Close the database connection
 $conn->close();
+
 ?>

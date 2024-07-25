@@ -83,7 +83,7 @@ $conn->close();
 
         <button onclick="location.href='profile_view.php'">Profile view</button>
         <button onclick="location.href='chatreq.html'">ADD New Requests</button>
-        <button onclick="location.href='update_password.php'">change current password</button>
+        
         
         <!--<canvas id="requestChart" width="400" height="200"></canvas>
         <script>

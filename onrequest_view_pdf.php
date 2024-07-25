@@ -1,16 +1,7 @@
+onrequest view 
+
 <?php
-// Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "verite";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+include('config.php');
 
 if (isset($_GET['id'])) {
     $rqst_id = $_GET['id'];

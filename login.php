@@ -2,9 +2,25 @@
 session_start();
 include('config.php'); 
 
+// CORS headers
+header("Access-Control-Allow-Origin: *"); // Replace with your React app's origin
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Credentials: true"); // Allow cookies to be sent
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
+    // Determine if the request is JSON or form data
+    $contentType = isset($_SERVER["CONTENT_TYPE"]) ? trim($_SERVER["CONTENT_TYPE"]) : '';
+
+    if ($contentType === "application/json") {
+        $content = trim(file_get_contents("php://input"));
+        $decoded = json_decode($content, true);
+        $username = $decoded['username'];
+        $password = $decoded['password'];
+    } else {
+        $username = $_POST['username'];
+        $password = $_POST['password'];
+    }
 
     // Use a prepared statement to prevent SQL injection
     $query = "SELECT user_id, password, name, position FROM users WHERE username = ?";
@@ -15,15 +31,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if ($stmt->fetch() && password_verify($password, $hashed_password)) {
         $_SESSION['user_id'] = $user_id;
-        $_SESSION['username'] = $username; // Store the username in the session
-        $_SESSION['user_name'] = $name; // Store the user's name in the session
-        $_SESSION['position'] = $position; // Store the user's position in the session
-        header("Location: dashboard.php"); // Correct the redirection to dashboard.php
-        exit(); // Ensure to exit after redirecting
+        $_SESSION['username'] = $username;
+        $_SESSION['user_name'] = $name;
+        $_SESSION['position'] = $position;
+
+        // Respond with JSON if it's an API request
+        if ($contentType === "application/json") {
+            echo json_encode(["status" => "success", "message" => "Login successful"]);
+        } else {
+            header("Location: dashboard.php");
+            exit();
+        }
     } else {
         $error = "Invalid login credentials";
+
+        // Respond with JSON if it's an API request
+        if ($contentType === "application/json") {
+            echo json_encode(["status" => "error", "message" => $error]);
+        }
     }
+
     $stmt->close();
+    exit(); // Add exit to stop the script after handling the API request
 }
 
 $conn->close();
@@ -54,8 +83,9 @@ $conn->close();
                 <input type="password" id="password" name="password" required><br>
                 <button type="submit">Login</button>
             </form>
-            <a href="password_recover.php" class="btn btn-primary">Forgot password</a>
+            <a href="recoverpassword_questions.php" class="btn btn-primary">Forgot password</a>
         </div>
     </div>
 </body>
 </html>
+                

@@ -19,12 +19,13 @@
 
   <label for="email">Enter your email:</label>
   <input type="email" id="email" name="email" required><br>
+  
  <label for="phone">Mobile Phone Number:</label><br>
  <input type="tel" id="phone" name="phone" required placeholder="0788 788 400" pattern="[0-9]{10}"><br>
 <P> SELECT YOUR CONTRACT COMPANY </P>
 
 <p>Select Your Contract Company</p>
-<div class="contract">
+<div class="contract" required>
     <input type="radio" id="contract1" name="contract" value="ITTCO">
     <label for="contract1">ITTCO</label><br>
 
@@ -34,11 +35,8 @@
     <input type="radio" id="contract3" name="contract" value="G.E.P.S">
     <label for="contract3">G.E.P.S</label>
 </div>
- 
 
-// required for admins only(Admin permission) privileges
-
-<label for="position">Position:</label>
+<label for="position" required>Position:</label>
         <select id="position" name="position">
             <option value="ACCOUNTANT">ACCOUNTANT</option>
             <option value="MANAGING DIRECTOR">MANAGING DIRECTOR</option>
@@ -47,14 +45,4 @@
             <option value="EMPLOYEE">EMPLOYEE</option>
         </select><br>
 <input type="submit" value="Register User">
-
-
-
-
-
-
-
-
-<!-- <button id="downloadPdf" style="height: 25px; width: 25px; background-color: cyan;">Preview and Download PDF</button> -->
-
 

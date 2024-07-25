@@ -37,6 +37,8 @@ $stmt->close();
     <p><strong>Position:</strong> <?php echo htmlspecialchars($position); ?></p>
 
     <a href="update_profile.php">Update Profile</a>
+    <button onclick="location.href='update_password.php'">change current password</button>
+    
 
     <?php if ($position !== 'ACCOUNTANT' && $position !== 'EMPLOYEE'): ?>
         <h2>Other Users</h2>
