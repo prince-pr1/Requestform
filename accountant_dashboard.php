@@ -56,6 +56,27 @@ while ($row = $result->fetch_assoc()) {
 }
 
 $stmt->close();
+
+$query_recent = "SELECT r.rqst_title, u.name AS requestor_name, 
+                        COALESCE(SUM(p.total_price), 0) AS total_price, r.status
+                 FROM request r
+                 LEFT JOIN users u ON r.rqst_by = u.user_id
+                 LEFT JOIN request_product rp ON r.rqst_id = rp.rqst_id
+                 LEFT JOIN product p ON rp.product_id = p.product_number
+                 WHERE r.status IN ('APPROVED', 'DENIED') AND r.status_update_time  >= NOW() - INTERVAL 3 DAY
+                 GROUP BY r.rqst_id, r.rqst_title, u.name, r.status";
+//
+$stmt_recent = $conn->prepare($query_recent);
+$stmt_recent->execute();
+$result_recent = $stmt_recent->get_result();
+
+$recent_requests = [];
+while ($row = $result_recent->fetch_assoc()) {
+    $recent_requests[] = $row;
+}
+
+$stmt_recent->close();
+
 $conn->close();
 ?>
 
@@ -102,11 +123,36 @@ $conn->close();
     <button onclick="location.href='userAuth/signup.html'">ADD New USER</button>
     <button onclick="location.href='dashboard.php'">Return to Dashboard</button>
      <button onclick="location.href='accountant_download.php'"> Download Decided Requests</button>
-     <button onclick="location.href='analyze_dashboard.php'"> Download Decided Requests</button>
+     <button onclick="location.href='analyze_dashboard.php'"> Analyze dashboard</button>
 
     <div class="container">
         <h1>Welcome to Accountant Dashboard, <?php echo htmlspecialchars($user_name); ?></h1>
-        <h2>Requests for Approval</h2>
+        
+
+        <h2>Recent Responded Requests </h2>
+<table>
+    <thead>
+        <tr>
+            <th>Requisition Title</th>
+            <th>Requested By</th>
+            <th>Total Price of Products</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach ($recent_requests as $recent_request): ?>
+            <tr>
+                <td><?php echo htmlspecialchars($recent_request['rqst_title']); ?></td>
+                <td><?php echo htmlspecialchars($recent_request['requestor_name']); ?></td>
+                <td><?php echo htmlspecialchars($recent_request['total_price']); ?></td>
+                <td><?php echo htmlspecialchars($recent_request['status']); ?></td>
+            </tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>
+<br>
+<h2>Requests for Approval</h2>
+<br>
         <table>
             <thead>
                 <tr>

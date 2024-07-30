@@ -17,7 +17,7 @@ $username = $_SESSION['username'];
 $user_name = $_SESSION['user_name'];
 
 // Fetch requests approved by the accountant
-$query = "SELECT r.rqst_id, r.rqst_time, r.rqst_title, r.projectname, r.rqst_by, 
+$query = "SELECT r.rqst_id, r.rqst_time, r.rqst_title, r.projectname, r.rqst_by,r.currency, 
                  COALESCE(SUM(p.total_price), 0) AS total_price,
                  u.name AS requestor_name,
                  IF(r.file_column IS NOT NULL AND r.file_column != '', 'yes', 'no') AS has_supporting_doc,
@@ -122,7 +122,7 @@ $conn->close();
 <body>
     <button onclick="location.href='userAuth/signup.html'">ADD New USER</button>
     <button onclick="location.href='dashboard.php'">Return to Dashboard</button>
-    <button onclick="location.href='approvals_dashboard.php'">Enter Accountant Dashboard</button>
+    <button onclick="location.href='backdoor_acc_dashboard.php'">Enter Accountant Dashboard</button>
     <button onclick="location.href='analyze_dashboard.php'">ENTER ANALYSIS Dashboard</button>
     <div class="container">
         <h1>Welcome to Admin Dashboard, <?php echo htmlspecialchars($user_name); ?></h1>
@@ -205,7 +205,23 @@ $conn->close();
                                     N/A
                                 <?php endif; ?>
                             </td>
-                            <td><?php echo htmlspecialchars($row['total_price']); ?></td>
+                            <td>
+    <?php 
+    $totalPrice = $row['total_price'];  // Change $request to $row
+    $currency = $row['currency'];       // Change $request to $row
+    $currencySymbol = '';
+
+    if ($currency === 'RWF') {
+        $currencySymbol = ' rwf';
+    } elseif ($currency === 'USD') {
+        $currencySymbol = ' $';
+    } elseif ($currency === 'EURO') {
+        $currencySymbol = ' €';
+    }
+
+    echo htmlspecialchars($totalPrice) . $currencySymbol; 
+    ?>
+</td>
                             <td>
                                 <a href="action_approve_request.php?rqst_id=<?php echo $row['rqst_id']; ?>&action=approve" class="approve-btn">Approve</a>
                                 <a href="action_approve_request.php?rqst_id=<?php echo $row['rqst_id']; ?>&action=reject" class="reject-btn">Reject</a>

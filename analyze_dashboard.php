@@ -1,4 +1,3 @@
-
 <?php
 session_start();
 include('config.php');
@@ -23,13 +22,14 @@ $query = "SELECT r.rqst_id, r.rqst_time, r.rqst_title, r.projectname, r.rqst_by,
                  COALESCE(SUM(p.total_price), 0) AS total_price,
                  u.name AS requestor_name,
                  IF(r.file_column IS NOT NULL AND r.file_column != '', 'yes', 'no') AS has_supporting_doc,
-                 r.credited_company, r.status
+                 r.credited_company, r.status,
+                 r.currency  -- Include the currency field
           FROM request r
           LEFT JOIN users u ON r.rqst_by = u.user_id
           LEFT JOIN request_product rp ON r.rqst_id = rp.rqst_id
           LEFT JOIN product p ON rp.product_id = p.product_number
           WHERE r.status IN ('APPROVED', 'DENIED')
-          GROUP BY r.rqst_id, r.rqst_time, r.rqst_title, r.projectname, r.rqst_by, u.name, r.credited_company, r.status";
+          GROUP BY r.rqst_id, r.rqst_time, r.rqst_title, r.projectname, r.rqst_by, u.name, r.credited_company, r.status, r.currency";
 
 $result = $conn->query($query);
 
@@ -95,6 +95,11 @@ while ($row = $chartResult->fetch_assoc()) {
     <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
     <!-- Include Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.css">
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.5.0/chart.min.js"></script>
+
 </head>
 <body>
     <button onclick="location.href='dashboard.php'">Return to Dashboard</button>
@@ -147,7 +152,23 @@ while ($row = $chartResult->fetch_assoc()) {
                                 N/A
                             <?php endif; ?>
                         </td>
-                        <td><?php echo htmlspecialchars($request['total_price']); ?></td>
+                        <td>
+    <?php 
+    $totalPrice = $request['total_price'];
+    $currency = $request['currency'];
+    $currencySymbol = '';
+
+    if ($currency === 'RWF') {
+        $currencySymbol = ' rwf';
+    } elseif ($currency === 'USD') {
+        $currencySymbol = ' $';
+    } elseif ($currency === 'EURO') {
+        $currencySymbol = ' €';
+    }
+
+    echo htmlspecialchars($totalPrice) . $currencySymbol; 
+    ?>
+</td>
                         <td><?php echo htmlspecialchars($request['status']); ?></td>
                         <td>
                             <form action="download_pdf.php" method="POST">
@@ -177,16 +198,47 @@ while ($row = $chartResult->fetch_assoc()) {
     $(document).ready(function() {
         var table = $('#requestsTable').DataTable({
             "order": [[ 0, "desc" ]],
-            footerCallback: function ( row, data, start, end, display ) {
-                var api = this.api(), data;
-                
-                // Function to format numbers
-                var intVal = function ( i ) {
-                    return typeof i === 'string' ?
-                        i.replace(/[\$,]/g, '')*1 :
-                        typeof i === 'number' ?
-                            i : 0;
-                };
+            footerCallback: function (row, data, start, end, display) {
+    var api = this.api(), data;
+
+    // Function to format numbers with commas and remove unnecessary decimals
+    var formatNumber = function (num) {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",").replace(/\.00$/, '');
+    };
+
+    // Function to parse and sum numbers
+    var intVal = function (i) {
+        return typeof i === 'string' ?
+            i.replace(/[^0-9.-]+/g, '') * 1 :
+            typeof i === 'number' ?
+                i : 0;
+    };
+
+    // Total over current page for each currency
+    var totalByCurrency = function (colIdx) {
+        var totalRWF = 0;
+        var totalUSD = 0;
+        var totalEURO = 0;
+
+        api.column(colIdx, { page: 'current' }).data().each(function (value) {
+            if (value.includes('rwf')) {
+                totalRWF += intVal(value);
+            } else if (value.includes('$')) {
+                totalUSD += intVal(value);
+            } else if (value.includes('€')) {
+                totalEURO += intVal(value);
+            }
+        });
+
+        return {
+            totalRWF: totalRWF,
+            totalUSD: totalUSD,
+            totalEURO: totalEURO
+        };
+    };
+
+    var totals = totalByCurrency(6);// assuming the 7th column contains the prices with currencies
+
                 
                 // Total over current page
                 var pageTotalColumn = function(colIdx) {
@@ -252,36 +304,39 @@ while ($row = $chartResult->fetch_assoc()) {
                         }).length;
                 };
 
-                // Update footer
-                $( api.column(0).footer() ).html(
-                    'Total: ' + api.column(0, { page: 'current' }).data().length
-                );
-                $('#itec-count').html(countCompanies('ITEC'));
-                $('#ittco-count').html(countCompanies('ITTCO'));
-                $('#geps-count').html(countCompanies('G.E.P.S'));
+                  // Update footer
+    $(api.column(0).footer()).html(
+        'Total: ' + api.column(0, { page: 'current' }).data().length
+    );
 
-                var requestorCounts = countRequestors();
-                var requestorCountsHtml = Object.keys(requestorCounts).map(function(requestor) {
-                    return requestor + ': ' + requestorCounts[requestor];
-                }).join(', ');
-                $('#requester-count').html(requestorCountsHtml);
+    $('#itec-count').html('' + countCompanies('ITEC') + '<br>');
+    $('#ittco-count').html('' + countCompanies('ITTCO') + '<br>');
+    $('#geps-count').html('' + countCompanies('G.E.P.S') + '<br>');
 
-                var productCounts = productCount();
-                var productCountsHtml = Object.keys(productCounts).map(function(product) {
-                    return product + ': ' + productCounts[product];
-                }).join(', ');
-                $('#total-products').html(productCountsHtml);
+    var requestorCounts = countRequestors();
+    var requestorCountsHtml = Object.keys(requestorCounts).map(function (requestor) {
+        return requestor + ': ' + requestorCounts[requestor];
+    }).join('<br>');
+    $('#requester-count').html(requestorCountsHtml);
 
-                var approvedCount = countStatus('APPROVED');
-                var deniedCount = countStatus('DENIED');
-                $('#status-count').html(
-                    'Approved: ' + approvedCount + ', Denied: ' + deniedCount
-                );
-                 
-                var totalMoney = pageTotalColumn(6);
-                $('#total-money').html(
-                    'Total Money: ' + totalMoney.toFixed(2) + ' RWF'
-                );
+    var productCounts = productCount();
+    var productCountsHtml = Object.keys(productCounts).map(function (product) {
+        return product + ': ' + productCounts[product];
+    }).join('<br> ');
+    $('#total-products').html(productCountsHtml);
+
+    var approvedCount = countStatus('APPROVED');
+            var deniedCount = countStatus('DENIED');
+            $('#status-count').html(
+                'Approved: ' + approvedCount + '<br>Denied: ' + deniedCount
+            );
+
+    $('#total-money').html(
+        'Total Money:<br>' +
+        formatNumber(totals.totalRWF) + ' rwf,<br>' +
+        formatNumber(totals.totalUSD) + ' $,<br>' +
+        formatNumber(totals.totalEURO) + ' €'
+    );
             }
         });
 
