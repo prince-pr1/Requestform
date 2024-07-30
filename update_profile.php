@@ -8,14 +8,28 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
+$user_position = $_SESSION['position'];
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $firstname = $_POST['firstname'];
     $lastname = $_POST['lastname'];
     $email = $_POST['email'];
     $phone = $_POST['phone'];
-    $contract = $_POST['contract'];
-    $position = $_POST['position'];
+
+    if ($user_position == 'EMPLOYEE') {
+        // Prevent employees from changing contract and position
+        $query = "SELECT contract, position FROM users WHERE user_id = ?";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $stmt->bind_result($contract, $position);
+        $stmt->fetch();
+        $stmt->close();
+    } else {
+        // For other positions, allow updating contract and position
+        $contract = $_POST['contract'];
+        $position = $_POST['position'];
+    }
 
     $query = "UPDATE users SET firstname = ?, lastname = ?, email = ?, phone = ?, contract = ?, position = ? WHERE user_id = ?";
     $stmt = $conn->prepare($query);
@@ -49,6 +63,8 @@ $stmt->close();
         <p><label>Last Name: <input type="text" name="lastname" value="<?php echo htmlspecialchars($lastname); ?>"></label></p>
         <p><label>Email: <input type="email" name="email" value="<?php echo htmlspecialchars($email); ?>"></label></p>
         <p><label>Phone: <input type="text" name="phone" value="<?php echo htmlspecialchars($phone); ?>"></label></p>
+
+        <?php if ($user_position != 'EMPLOYEE'): ?>
         <p><label>Contract: 
             <select name="contract">
                 <option value="ITTCO" <?php if ($contract == 'ITTCO') echo 'selected'; ?>>ITTCO</option>
@@ -65,6 +81,11 @@ $stmt->close();
                 <option value="EMPLOYEE" <?php if ($position == 'EMPLOYEE') echo 'selected'; ?>>EMPLOYEE</option>
             </select>
         </label></p>
+        <?php else: ?>
+        <p><label>Contract: <?php echo htmlspecialchars($contract); ?></label></p>
+        <p><label>Position: <?php echo htmlspecialchars($position); ?></label></p>
+        <?php endif; ?>
+
         <p><button type="submit">Update</button></p>
     </form>
 </body>
