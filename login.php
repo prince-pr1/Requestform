@@ -1,12 +1,14 @@
 <?php
 session_start();
-include('config.php'); 
+include('config.php');
 
 // CORS headers
 header("Access-Control-Allow-Origin: *"); // Replace with your React app's origin
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Access-Control-Allow-Credentials: true"); // Allow cookies to be sent
+
+$error = ""; // Initialize an error message variable
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Determine if the request is JSON or form data
@@ -29,33 +31,44 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $stmt->execute();
     $stmt->bind_result($user_id, $hashed_password, $name, $position);
 
-    if ($stmt->fetch() && password_verify($password, $hashed_password)) {
-        $_SESSION['user_id'] = $user_id;
-        $_SESSION['username'] = $username;
-        $_SESSION['user_name'] = $name;
-        $_SESSION['position'] = $position;
+    if ($stmt->fetch()) {
+        if (password_verify($password, $hashed_password)) {
+            // Password is correct, set session variables
+            $_SESSION['user_id'] = $user_id;
+            $_SESSION['username'] = $username;
+            $_SESSION['user_name'] = $name;
+            $_SESSION['position'] = $position;
 
-        // Respond with JSON if it's an API request
-        if ($contentType === "application/json") {
-            echo json_encode(["status" => "success", "message" => "Login successful"]);
+            // Respond with JSON for API request
+            if ($contentType === "application/json") {
+                echo json_encode(["status" => "success", "message" => "Login successful"]);
+            } else {
+                // Redirect to dashboard for form submission
+                header("Location: dashboard.php");
+                exit();
+            }
         } else {
-            header("Location: dashboard.php");
-            exit();
+            // Incorrect password
+            $error = "Invalid login credentials.";
+
+            // Respond with JSON for API request
+            if ($contentType === "application/json") {
+                echo json_encode(["status" => "error", "message" => $error]);
+            }
         }
     } else {
-        $error = "Invalid login credentials";
+        // No user found
+        $error = "Invalid login credentials.";
 
-        // Respond with JSON if it's an API request
+        // Respond with JSON for API request
         if ($contentType === "application/json") {
             echo json_encode(["status" => "error", "message" => $error]);
         }
     }
 
     $stmt->close();
-    exit(); // Add exit to stop the script after handling the API request
+    $conn->close();
 }
-
-$conn->close();
 ?>
 
 <!DOCTYPE html>
@@ -73,8 +86,8 @@ $conn->close();
                 <img src="images/ITEC_LOGO.png" alt="Logo 2">
                 <img src="images/ITTCO_LOGO.png" alt="Logo 3">
             </div>
-            <?php if (isset($error)): ?>
-                <div><?php echo htmlspecialchars($error); ?></div>
+            <?php if (!empty($error)): ?>
+                <div class="error"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
             <form method="POST" action="login.php">
                 <label for="username">Username:</label>
@@ -88,4 +101,3 @@ $conn->close();
     </div>
 </body>
 </html>
-                

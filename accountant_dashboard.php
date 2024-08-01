@@ -57,6 +57,7 @@ while ($row = $result->fetch_assoc()) {
 
 $stmt->close();
 
+// fetch the recent approved request in the past three days 
 $query_recent = "SELECT r.rqst_title, u.name AS requestor_name, 
                         COALESCE(SUM(p.total_price), 0) AS total_price, r.status
                  FROM request r
@@ -65,7 +66,7 @@ $query_recent = "SELECT r.rqst_title, u.name AS requestor_name,
                  LEFT JOIN product p ON rp.product_id = p.product_number
                  WHERE r.status IN ('APPROVED', 'DENIED') AND r.status_update_time  >= NOW() - INTERVAL 3 DAY
                  GROUP BY r.rqst_id, r.rqst_title, u.name, r.status";
-//
+
 $stmt_recent = $conn->prepare($query_recent);
 $stmt_recent->execute();
 $result_recent = $stmt_recent->get_result();
