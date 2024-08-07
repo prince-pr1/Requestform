@@ -131,56 +131,30 @@ $conn->close();
         <h1>Welcome to Accountant Dashboard, <?php echo htmlspecialchars($user_name); ?></h1>
         
 
-        <h2>Recent Responded Requests </h2>
-<table>
-    <thead>
-        <tr>
-            <th>Requisition Title</th>
-            <th>Requested By</th>
-            <th>Total Price of Products</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php foreach ($recent_requests as $recent_request): ?>
-            <tr>
-                <td><?php echo htmlspecialchars($recent_request['rqst_title']); ?></td>
-                <td><?php echo htmlspecialchars($recent_request['requestor_name']); ?></td>
-                <td><?php echo htmlspecialchars($recent_request['total_price']); ?></td>
-                <td><?php echo htmlspecialchars($recent_request['status']); ?></td>
-            </tr>
-        <?php endforeach; ?>
-    </tbody>
-</table>
-<br>
-<h2>Requests for Approval</h2>
-<br>
-        
-
-        <h2>Recent Responded Requests </h2>
-<table>
-    <thead>
-        <tr>
-            <th>Requisition Title</th>
-            <th>Requested By</th>
-            <th>Total Price of Products</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php foreach ($recent_requests as $recent_request): ?>
-            <tr>
-                <td><?php echo htmlspecialchars($recent_request['rqst_title']); ?></td>
-                <td><?php echo htmlspecialchars($recent_request['requestor_name']); ?></td>
-                <td><?php echo htmlspecialchars($recent_request['total_price']); ?></td>
-                <td><?php echo htmlspecialchars($recent_request['status']); ?></td>
-            </tr>
-        <?php endforeach; ?>
-    </tbody>
-</table>
-<br>
-<h2>Requests for Approval</h2>
-<br>
+        <h2>Recent Responded Requests</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Requisition Title</th>
+                    <th>Requested By</th>
+                    <th>Total Price of Products</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($recent_requests as $recent_request): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($recent_request['rqst_title']); ?></td>
+                        <td><?php echo htmlspecialchars($recent_request['requestor_name']); ?></td>
+                        <td><?php echo htmlspecialchars($recent_request['total_price']); ?></td>
+                        <td><?php echo htmlspecialchars($recent_request['status']); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <br>
+        <h2>Requests for Approval</h2>
+        <br>
         <table>
             <thead>
                 <tr>
