@@ -266,33 +266,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             echo 'Error updating PDF: ' . $updatePdfSql->error . '<br>';
         }
         $updatePdfSql->close();
+   
+       // Display link to view the PDF and cancel button
+       echo '<div style="margin-top: 20px;">';
+        
+       // Cancel button above the PDF
+       echo '<form method="post" action="cancel_request.php" style="margin-bottom: 20px;">';
+       echo '<input type="hidden" name="rqst_id" value="' . $rqst_id . '">';
+       echo '<button type="submit" style="background-color: #f44336; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Cancel Request</button>';
+       echo '</form>';
+      
+       // Embedded PDF
+       echo '<h3>Your Request PDF:</h3>';
+       echo '<iframe src="onrequest_view_pdf.php?id=' . $rqst_id . '" style="width: 100%; height: 600px; border: 1px solid #ccc;"></iframe>';
+       echo '</div>';
 
-        // Display link to view the PDF and cancel button
-       
-      echo '<a href="onrequest_view_pdf.php?id=' . $rqst_id . '" target="_blank">View PDF</a><br>';
-        echo '<form method="post" action="cancel_request.php">';
-        echo '<input type="hidden" name="rqst_id" value="' . $rqst_id . '">';
-        echo '<button type="submit">Cancel</button>';
-        echo '</form>'; 
-
-        /* echo '<script type="text/javascript">
-          function showPopup() {
-          alert("Your request has been inserted successfully!");
-           if (confirm("Do you want to view the PDF now?")) {
-        window.open("onrequest_view_pdf.php?id=' . $rqst_id . '", "_blank");
-    }
-    window.location.href = "dashboard.php";
-}
-showPopup();
-*/
-
-    } else {
-        echo 'Error: ' . $requestSql->error . '<br>';
-        $requestSql->close();
-    }
+   } else {
+       echo 'Error: ' . $requestSql->error . '<br>';
+       $requestSql->close();
+   }
 }
 
 // Close the database connection
 $conn->close();
-
-?>
